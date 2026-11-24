@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie Club Collection</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 35px 16px; min-height: 100vh;
+      font-family: Arial, sans-serif; color: #20243a;
+      background: linear-gradient(135deg, #eef2ff, #fdf2f8);
+    }
+    main { max-width: 850px; margin: auto; }
+    header { text-align: center; margin-bottom: 28px; }
+    h1 { color: #5936a5; font-size: 38px; margin-bottom: 8px; }
+    header p { color: #666; }
+    section {
+      background: white; padding: 24px; margin-bottom: 20px;
+      border-radius: 16px; box-shadow: 0 8px 24px #25204418;
+    }
+    h2 { color: #5936a5; margin-top: 0; }
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    input {
+      width: 100%; padding: 12px; border: 1px solid #d9d6e5;
+      border-radius: 8px; font-size: 15px;
+    }
+    input:focus { outline: 2px solid #9b7bea; }
+    button {
+      border: 0; border-radius: 8px; padding: 11px 15px;
+      color: white; font-weight: bold; cursor: pointer;
+    }
+    .add { background: #6941c6; }
+    .add:hover { background: #52309f; }
+    .search { margin: 18px 0; }
+    #movies { display: grid; gap: 12px; }
+    .movie {
+      padding: 16px; border-left: 5px solid #8b5cf6;
+      border-radius: 9px; background: #f8f7ff;
+    }
+    .movie h3 { color: #38256e; margin: 0 0 8px; }
+    .movie p { margin: 5px 0; color: #555; }
+    .edit { background: #168aad; margin-right: 7px; }
+    .delete { background: #d9485f; }
+    .empty { color: #777; text-align: center; padding: 18px; }
+    footer { text-align: center; color: #777; font-size: 13px; margin-top: 24px; }
+    @media (max-width: 550px) {
+      form { grid-template-columns: 1fr; }
+      h1 { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>🎬 Movie Club</h1>
+      <p>Your club’s collection of unforgettable films</p>
+    </header>
+
+    <section>
+      <h2 id="formTitle">Add a Movie</h2>
+      <form id="form">
+        <input name="title" placeholder="Movie title" required>
+        <input name="genre" placeholder="Genre" required>
+        <input name="year" type="number" placeholder="Release year" required>
+        <input name="rating" type="number" min="0" max="10" step="0.1"
+          placeholder="Rating (0–10)" required>
+        <input name="director" placeholder="Director" required>
+        <button class="add" type="submit">Save Movie</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Our Collection</h2>
+      <input class="search" id="search" placeholder="🔎 Search by title or genre">
+      <div id="movies"></div>
+    </section>
+
+    <footer>Movie Club Collection · Keep great stories close</footer>
+  </main>
+
+  <script>
+    const form = document.querySelector("#form");
+    const list = document.querySelector("#movies");
+    const search = document.querySelector("#search");
+    let movies = JSON.parse(localStorage.getItem("movies") || "[]");
+    let editing = -1;
+
+    function render() {
+      list.innerHTML = "";
+      const found = movies.map((movie, index) => ({ movie, index }))
+        .filter(({ movie }) =>
+          (movie.title + " " + movie.genre).toLowerCase()
+            .includes(search.value.toLowerCase()));
+
+      if (!found.length) {
+        list.innerHTML = '<p class="empty">No movies found. Add one above!</p>';
+        return;
+      }
+
+      found.forEach(({ movie, index }) => {
+        const card = document.createElement("article");
+        card.className = "movie";
+        const title = document.createElement("h3");
+        title.textContent = movie.title;
+        const details = document.createElement("p");
+        details.textContent = `${movie.genre} · ${movie.year} · ★ ${movie.rating}/10`;
+        const director = document.createElement("p");
+        director.textContent = `Directed by ${movie.director}`;
+        const edit = document.createElement("button");
+        edit.className = "edit";
+        edit.textContent = "Edit";
+        edit.onclick = () => {
+          Object.keys(movie).forEach(key => form.elements[key].value = movie[key]);
+          editing = index;
+          document.querySelector("#formTitle").textContent = "Update Movie";
+        };
+        const remove = document.createElement("button");
+        remove.className = "delete";
+        remove.textContent = "Delete";
+        remove.onclick = () => {
+          movies.splice(index, 1);
+          save();
+        };
+        card.append(title, details, director, edit, remove);
+        list.appendChild(card);
+      });
+    }
+
+    function save() {
+      localStorage.setItem("movies", JSON.stringify(movies));
+      render();
+    }
+
+    form.onsubmit = event => {
+      event.preventDefault();
+      const movie = Object.fromEntries(new FormData(form));
+      if (editing === -1) movies.push(movie);
+      else movies[editing] = movie;
+      editing = -1;
+      form.reset();
+      document.querySelector("#formTitle").textContent = "Add a Movie";
+      save();
+    };
+
+    search.oninput = render;
+    render();
+  </script>
+</body>
+</html>
